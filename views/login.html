@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="./static/css/login.css">
+        <script src="./static/js/jquery.min.js"></script>
+        <script src="./static/js/global.js"></script>
+        <script src="./static/js/login_md5.js"></script>
+        <title>Sault</title>
+    </head>
+    <body onkeydown="keyLogin();">
+        <div class="form">
+            <!-- 登录tittle -->
+            <h2>
+                <span>索特网盘</span>
+            </h2>
+            <!-- 中间填写区域 -->
+            <div class="form-area">
+                <!-- 短信登录 -->
+                <div class="title">
+                    <a href="#">短信快捷登录>></a>
+                </div>
+                <!-- 账号 -->
+                <div class="form-item name">
+                    <input type="text" name="username" placeholder="请输入账号" maxlength="14">
+                    <span class="clear" onclick="clearName()">x</span>
+                </div>
+                <!-- 密码 -->
+                <div class="form-item pwd">
+                    <input type="password" name="password" placeholder="请输入密码" maxlength="14">
+                    <span class="clear" onclick="clearPassword()">x</span>
+                </div>
+                <!-- 登录按钮 -->
+                <div class="form-item login">
+                    <button onclick="login()">登录</button>
+                </div>
+                <!-- 忘记密码 -->
+                <div class="forget">
+                    <a href="#">忘记密码？</a>
+                </div>
+                <!-- 其他登录方式和注册 -->
+                <div class="regist">
+                    <span>其他方式登录：</span>
+                    <a href="">立即注册</a>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script>
+        $(".regist a")[0].href = regist_href; //注册页面
+
+        // 按enter键自动登录
+        function keyLogin(){
+            if (event.keyCode == 13){  //回车键的键值为13
+                var btn = document.getElementsByTagName("button")[0];
+                btn.click();  //xxxx为登录按钮的id
+            }
+        }
+
+        // 清除用户名
+        function clearName() {
+            let username = $(".name input");
+            username.val("");
+            username.focus();
+        }
+
+        // 清除密码
+        function clearPassword() {
+            let password = $(".pwd input");
+            password.val("");
+            password.focus();
+        }
+
+        // 登录
+        function login() {
+            let username = $(".name input")[0].value,
+                password = $(".pwd input")[0].value;
+            let login_data = `{"username":"${username}","password":"${b64_md5(password)}"}`;
+            // 验证登录名和密码
+            $.ajax(
+                {
+                    url: login_rpc,
+                    data: login_data,
+                    type: "POST",
+                    async: false,
+                    success: function(data)
+                    {
+                        if(data.code == 0){
+                            
+                            window.location.href = index_href;
+                            window.localStorage.setItem('user',username); //存储用户名
+                            return true;
+                        }
+                        else{
+                            alert(data.msg);
+                            return false;
+                        }
+                    },
+                    error: function()
+                    {
+                        alert("服务器错误")
+                    }
+                });
+        }
+    </script>
+</html>

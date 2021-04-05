@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Document</title>
+	<script src="./js/spark-md5.min.js"></script>
+</head>
+
+<body>
+	<input type="file" name="" id="file" />
+	<div id="box"></div>
+</body>
+<script>
+	var m = null;
+	// document.querySelector('#file').addEventListener('change', e => {
+	//     let file = e.target.files[0];
+	//     console.log(e)
+	//     let fileReader = new FileReader()
+	//     fileReader.readAsBinaryString(file);
+	//     fileReader.onload = e => {
+	//     let md5 = SparkMD5.hashBinary(e.target.result);
+	//     console.log(md5);
+	// }
+	// });
+
+	let el = document.getElementById("file");
+	el.addEventListener("change", handle, false);
+
+	function handle(e) {
+		let file = e.target.files[0];
+		//   getLittleFileMd5(e, file);
+		// getBigFileMd5(e, file);
+		calculate(file);
+		// let n = getLittleFileMd5(e, file);
+		// computeMD5(file);
+	}
+
+	function calculate(file) {
+		var file = file;
+		var fileReader = new FileReader(),
+			box = document.getElementById("box");
+		(blobSlice =
+			File.prototype.mozSlice ||
+			File.prototype.webkitSlice ||
+			File.prototype.slice),
+			(chunkSize = 2097152),
+			// read in chunks of 2MB
+			(chunks = Math.ceil(file.size / chunkSize)),
+			(currentChunk = 0),
+			(spark = new SparkMD5());
+
+		fileReader.onload = function (e) {
+			// console.log("read chunk nr", currentChunk + 1, "of", chunks);
+			spark.appendBinary(e.target.result);
+			currentChunk++;
+
+			if (currentChunk < chunks) {
+				loadNext();
+			} else {
+				box.innerText = spark.end();
+				let a = spark.end();
+				console.info("computed hash1", spark.end()); // compute hash
+				console.info("computed hash2", box.innerText); // compute hash
+				console.log("computed hash3", spark.end()); // compute hash
+			}
+		};
+
+		function loadNext() {
+			var start = currentChunk * chunkSize,
+				end = start + chunkSize >= file.size ? file.size : start + chunkSize;
+
+			fileReader.readAsBinaryString(blobSlice.call(file, start, end));
+		}
+
+		loadNext();
+	}
+</script>
+<script>
+	//Ajax Function
+
+	var reqObj; //Creat Null Instence
+
+	var RequestArray = new Array();
+
+	//var whichRequest;
+
+	//加入请求队列
+
+	function AddRequestArray(url, isAsy, method, parStr, callBackFun) {
+		var ArgItem = new Array();
+
+		ArgItem[0] = url;
+		ArgItem[1] = isAsy;
+		ArgItem[2] = method;
+		ArgItem[3] = parStr;
+		ArgItem[4] = callBackFun;
+		RequestArray.push(ArgItem); //将当前请求添加到队列末尾
+
+		if (RequestArray.length == 1) {
+			//如果请求队列里只有当前请求立即要求执行队列，如果有其他请求，那么就不要求执行队列
+			ExeRequestArray();
+		}
+	}
+
+	//执行队列里的顺序第一个的请求
+	function ExeRequestArray() {
+		if (RequestArray.length > 0) {
+			//如果队列里有请求执行 AJAX请求
+			var ArgItem = RequestArray[0];
+			DoRequest(ArgItem[0], ArgItem[1], ArgItem[2], ArgItem[3], ArgItem[4]);
+		}
+	}
+
+	//Run Ajax (string urladdress,bool IsAsy,string method,string parameters,string whichRequest)
+
+
+	reqObj = false;
+	//whichRequest = whichReq;
+	if (window.XMLHttpRequest) {
+		//compatible Mozilla, Safari,...
+		reqObj = new XMLHttpRequest(); //Creat XMLHttpRequest Instance
+		if (reqObj.overrideMimeType) {
+			//if Mime Type is false ,then set MimeType 'text/xml'
+			reqObj.overrideMimeType("text/xml");
+		}
+	} else if (window.ActiveXObject) {
+		//compatible IE
+
+		try {
+			reqObj = new ActiveXObject("Msxml2.XMLHTTP"); //Creat XMLHttpRequest Instance
+		} catch (e) {
+			try {
+				reqObj = new ActiveXObject("Microsoft.XMLHTTP"); //Creat XMLHttpRequest Instance
+			} catch (e) { }
+		}
+	}
+
+	//if reqObj is false,then alert warnning
+
+	if (!reqObj) {
+		alert("Giving up :( Cannot create an XMLHTTP instance");
+
+		return false;
+	}
+
+	reqObj.onreadystatechange = function () {
+		GetRequest(callBackFun);
+	}; //set onreadystatechange Function
+
+	reqObj.open(method, url, isAsy); //set open Function
+
+	reqObj.setRequestHeader(
+		"Content-Type",
+		"application/x-www-form-urlencoded"
+	); //set RequestHeader
+
+	reqObj.send(parStr); //do send and send parameters
+    }
+
+	//get Service Response information Function
+
+	function GetRequest(callBackFun) {
+		//judge readystate information
+
+		if (reqObj.readyState == 4) {
+			//judge status information
+
+			if (reqObj.status == 200) {
+				eval(callBackFun + "(reqObj)");
+			} else {
+				alert(
+					"There was a problem with the request." +
+					reqObj.status +
+					"CallFunction:" +
+					callBackFun
+				); //else alert warnning
+			}
+
+			RequestArray.shift(); //移除队列里的顺序第一个的请求，即当前已经执行完成的请求
+
+			ExeRequestArray(); //要求执行队列中的请求
+		}
+	}
+</script>
+
+</html>
