@@ -36,10 +36,10 @@ html,body{
 }
 /* 选项 */
 .top .nav-title{
-    width: 440px;
     height: 100px;
     line-height: 100px;
     margin: 3px 30px;
+    overflow: hidden;
 }
 .top .nav-title li{
     float: left;
@@ -61,7 +61,8 @@ html,body{
  }
 /* 用户 */
 .top .user-logout{
-    margin: 28px 270px;
+    margin: 28px 50px;
+    width: 21%;
 }
 .top .user{
     margin: 0 20px;
@@ -86,6 +87,7 @@ html,body{
 .main{
     width: 100%;
     height: 86%;
+    margin-top: 5px;
 }
 /* 正文左侧 */
 .main .left{

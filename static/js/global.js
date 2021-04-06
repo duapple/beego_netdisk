@@ -5,28 +5,36 @@ let login_href = "http://" + host + "/login",
     regist_href = "http://" + host + "/register",
     index_href = "http://" + host + "/index",
     share_href = "http://" + host + "/share",
+    account_href = "http://" + host + "/account",
     logout_href = "http://" + host + "/logout";
 
 // 接口
 let login_rpc = "http://" + host + "/authentication",
-    regist_rpc = "http://" + host + "/register",
-    home_rpc = "http://" + host + "/home",
+    register_rpc = "http://" + host + "/register",
+    modify_rpc = "http://" + host + "/edit_account",
+    deregister_rpc = "http://" + host + "/deregister",
+    home_rpc = "http://" + host + "/dir_option",
     logout_rpc = "http://" + host + "/logout",
     upload_rpc = "http://" + host + "/upload",
     download_rpc = "http://" + host + "/download",
     uploadreq_rpc = "http://" + host + "/upload_request";
 
 let _DATA,  //目录数据(JSON格式)
-    dirs_files_data = [],  //存储所有文件夹名和文件名
     index = 0;  //key_word的索引
 
 let username = localStorage.getItem("user"), //用户名
-    current_file = ".",  //当前所在的文件夹
+    password = localStorage.getItem("password"), //密码
+    current_path = "/",  //当前所在的文件夹
     select_file = "",  //当前选中的某个文件，用于下载
-    current_dir = [],  //当前路径数组
+    current_dirname_arr = [],  //当前文件夹路径组成的数组，主要用于路径跳转
+    dir_name = "",  //当前点击的文件夹
     checkSelect_list = [],  //选中的文件数组
     newClick = false, //新建文件夹正在被调用标识
     md5_file = null, //转换为md5后的文件
+
+    /*重命名需要的变量*/
+    current_dom = null;
+
     /*切片需要的变量*/
     chunkNum = 0, //分片数
     chunkNum_uploaded = 1, //已上传片数

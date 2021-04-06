@@ -98,23 +98,21 @@
         function regist() {
             let username = document.getElementsByName("Username")[0].value,
                 password = document.getElementsByName("Password")[0].value;
-            let regist_data = "{\"UserName\""+ ":\"" + username + "\"," + "\"PassWord\"" + ":\"" + b64_md5(password) + "\"}";
-            console.log(regist_data);
+            let regist_data = `{"username":"${username}","password":"${b64_md5(password)}"}`;
             $.ajax(
                 {
-                    url: regist_rpc,
+                    url: register_rpc,
                     data: regist_data,
                     type: "POST",
                     async: false,
-                    success: function(data)
+                    success: function(result)
                     {
-                        if(data.code == 1000){
-                            console.log(data.description);
+                        if(result.code === 0){
                             window.location.href = login_href;
                             return true;
                         }
                         else{
-                            alert(data.description);
+                            alert(result.msg);
                             return false;
                         }
                     },

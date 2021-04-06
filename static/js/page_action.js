@@ -74,28 +74,26 @@ function newFile() {
 				new_input.focus();  //光标定位到输入框中
 			}
 			else {
-				let new_data = `{"Opt":1,"DirName":["${input_value}"]}`;
+				let new_data = `{"dir_option":"dir_option_create","dir_name":["${input_value}"]}`;
 				$.ajax(
 					{
 						url: home_rpc,
 						data: new_data,
 						type: "POST",
 						async: false,
-						success: function (data) {
-							if (data.code == 1000) {
+						success: function (result) {
+							if (result.code === 0) {
 								// 隐藏新建文件夹的框，使添加的文件直接加入表格中
 								new_input[0].className = "hide";
 								icon_save[0].className = "hide";
 								icon_cancel[0].className = "hide";
-								console.log(icon)
 								icon[0].className = "";
 								icon[0].innerText = input_value;
-								current_file = ".";
-								queryData(current_file);
+								queryData(current_path);
 								return true;
 							}
 							else {
-								alert(data.description);
+								alert(result.msg);
 								return false;
 							}
 						},
@@ -110,16 +108,16 @@ function newFile() {
 
 	// 取消按钮
 	icon_cancel.on('click', function () {
-		queryData(".");
+		queryData(current_path);
 		newClick = false;
 	});
 }
 
 // 删除文件
 function deleteFile() {
-	current_file = ".";
 	checkSelect();
-	let del_data = `{"Opt":2,"DirName":[${checkSelect_list}]}`;
+	let del_data = `{"dir_option":"dir_option_remove","dir_name":[${checkSelect_list}]}`;
+	console.log(del_data)
 	if (checkSelect_list.length === 0) {
 		alert("请先选择文件！");
 		return;
@@ -130,18 +128,18 @@ function deleteFile() {
 			data: del_data,
 			type: "POST",
 			async: false,
-			success: function (data) {
-				if (data.code == 1000) {
+			success: function (result) {
+				if (result.code === 0) {
 					let menu = document.getElementsByClassName("menu")[0];  //右键的菜单
 					menu.style.display = "none";
 					checkSelect_list = [];
 					isCheckAll();
-					queryData(current_file);
+					queryData(current_path);
 					clearMoreBtn();
 					return true;
 				}
 				else {
-					alert(data.description);
+					alert(result.msg);
 					return false;
 				}
 			},
@@ -167,9 +165,137 @@ function refresh() {
 	let interval = setInterval(rot, 5);
 }
 
+// 文件/文件夹重命名
+function renameFile() {
+	let oldName = select_file,
+		newName = "",
+		file_name = current_dom.find(".file_name"),
+		newStr = `
+			<input type= "text" class="new_input">
+			<span class="icon">
+				<i class="icon_1"></i>
+				<i class="icon_2"></i>
+			</span>
+		`;
+	file_name.html(newStr);
+
+	let icon_save = file_name.find(".icon_1"),
+		icon_cancel = file_name.find(".icon_2"),
+		new_input = file_name.find(".new_input");
+	new_input.val(oldName);
+
+	// 保存按钮
+	icon_save.on('click', function (e) {
+		stopPropagation(e);
+		newName = new_input.val();
+		console.log(newName);
+		if (!newName) {
+			alert("文件名称不能为空，请重新输入！");
+			new_input.focus();
+		}
+		else if (newName === oldName) {
+			newStr = `
+				<span>${oldName}</span>
+			`;
+			file_name.html(newStr);
+		}
+		else {
+			// 验证文件名
+			if (!validateFileName(newName)) {
+				alert("文件名不能包含以下字符:[\\\\/:*?\"<>|]");
+				new_input.focus();  //光标定位到输入框中
+			}
+			else {
+				let rename_data = `{"dir_option":"dir_option_rename","dir_name":["${oldName}", "${newName}"]}`;
+				console.log(rename_data);
+				$.ajax(
+					{
+						url: home_rpc,
+						data: rename_data,
+						type: "POST",
+						async: false,
+						success: function (result) {
+							if (result.code === 0) {
+								// 隐藏新建文件夹的框，使添加的文件直接加入表格中
+								newStr = `
+									<span>${newName}</span>
+								`;
+								file_name.html(newStr);
+								return true;
+							}
+							else {
+								alert(result.msg);
+								return false;
+							}
+						},
+						error: function () {
+							alert("Network error!")
+						}
+					});
+			}
+		}
+	});
+
+	// 取消按钮
+	icon_cancel.on('click', function () {
+		newStr = `
+			<span>${oldName}</span>
+		`;
+		file_name.html(newStr);
+	});
+}
+
+/* 下载文件
+*  @params
+*  @return
+*/
+function downloadFile() {
+	console.log(select_file);
+	let form = document.createElement("form"),
+		input = document.createElement("input");
+	form.style.display = "none";
+	form.method = "post";
+	form.action = download_rpc;
+	form.enctype = "multipart/form-data";
+	input.type = "hidden";
+	input.name = "download_file";
+	input.value = select_file;
+	form.appendChild(input);
+	document.body.appendChild(form);
+
+	let form_data = new FormData(form);
+	form.submit();
+}
+
+/* 全部暂停下载
+*  @params
+*  @return
+*/
+function pauseList() {
+	let pause = document.getElementsByClassName("total-pause")[0],
+		uploadList = document.getElementById("uploadList"),
+		liList = uploadList.getElementsByTagName("li"),
+		len = liList.length;
+	if (pause.innerText === "全部暂停") {
+		for (let i = 0; i < len; i++) {
+			pauseUpload(i);
+		}
+		pause.innerText = "全部开始";
+	}
+	else {
+		for (let i = 0; i < len; i++) {
+			reUpload(i);
+		}
+		pause.innerText = "全部暂停";
+	}
+}
+
 // 上传文件
 function upload(e) {
 	upload_type = 1; //上传文件
+	formObj = {
+        length: 0
+    };
 	file_one = document.getElementById('file').files[0];  //获取上传的文件对象
 	let form_info = new FormData(document.getElementById('filename'));  //获取上传的文件的formdata信息
 	// 把formdata信息放入formObj
@@ -180,10 +306,11 @@ function upload(e) {
 	eObj = addFileObj(e, eObj);
 	// 当前上传请求所在的数组放入requestObj
 	requestObj = addFileObj(currentRequest_arr, requestObj);
-	if (end_lastLi) {  //如果上一个进度表创建完毕，则创建下一个（此时的进度表处于未结束状态）
-		end_lastLi = false;
-		addLi(index_uploadFile_obj);
-	}
+	uploadEver();
+	// if (end_lastLi) {  //如果上一个进度表创建完毕，则创建下一个（此时的进度表处于未结束状态）
+	// 	end_lastLi = false;
+	// 	addLi(index_uploadFile_obj);
+	// }
 }
 
 // 上传文件夹
@@ -204,14 +331,13 @@ function uploadDir() {
 				data: new_data,
 				type: "POST",
 				async: false,
-				success: function (data) {
-					if (data.code == 1000) {
-						console.log(data.description);
+				success: function (result) {
+					if (result.code === 0) {
 						queryData(folder_name);
 						return true;
 					}
 					else {
-						alert(data.description);
+						alert(data.msg);
 						return false;
 					}
 				},
@@ -235,12 +361,9 @@ function addLi(index) {
 		file = files_arr[index];
 		index_uploadFile_obj++;  //新上传的文件对象的索引递增
 	}
-	console.log(uploadFile_obj);
-	console.log(index)
-	console.log(file);
 	let file_name = file.name,
 		file_size = bytesToSize(file.size);
-	newLoadli(file_name, file_size, current_dir[current_dir.length - 1]);
+	newLoadli(file_name, file_size, current_dirname_arr[current_dirname_arr.length - 1]);
 	end_lastLi = true;  //上一个进度表已完成创建
 	if (upload_type === 1) {   //文件：结束上一个文件的上传后开始分片
 		if (end_last) {  //上一个文件上传任务结束了才开始当前任务
@@ -342,7 +465,7 @@ function getFileMd5(index) {
 		index 文件数组索引
 *  @return
 */
-function uploadEver(index) {
+function uploadEver_old(index) {
 	if (upload_type === 1) {
 		file_obj = uploadFile_obj[index];
 	}
@@ -382,13 +505,45 @@ function uploadEver(index) {
 		});
 }
 
+// 上传单个文件
+function uploadEver() {
+	let file_obj = uploadFile_obj[0];
+	fileSize = file_obj.size;
+
+	let form_data = formObj[0], //获取表单信息
+		formData = new FormData();
+	formData.append("upload_file", form_data.get("uploadfile")) //将获取的文件分片赋给新的对象
+
+	$.ajax(
+		{
+			url: upload_rpc,
+			data: formData,
+			type: "POST",
+			cache: false,
+			processData: false,
+			contentType: false,
+			success: function (result) {
+				if (result.code === 0) {
+					queryData(current_path);
+				}
+				else {
+					alert(result.msg);
+					return false;
+				}
+			},
+			error: function () {
+				alert("Network error!")
+			}
+		});
+}
+
 /* 分片上传文件
 *  @params
 		start [number] 起始字节
 *  @return
 */
 function uploadFile(start) {
-	current_file = ".";
+	current_path = ".";
 	endupload_flag = false;
 	// 上传完成 
 	if (start >= fileSize) {
@@ -403,7 +558,7 @@ function uploadFile(start) {
 				uploadFile_obj = {
 					length: 0
 				};
-				queryData(current_file);
+				queryData(current_path);
 			}
 			else {
 				getFileMd5(obj_index);
@@ -412,7 +567,7 @@ function uploadFile(start) {
 		else {
 			file_index++;
 			if (file_index >= files_arr.length) {  //文件夹的文件上传完毕
-				queryData(current_file);
+				queryData(current_path);
 			}
 			else {
 				getFileMd5(file_index);
@@ -584,7 +739,7 @@ function reUpload(index) {
 *  @return
 */
 function toTransport() {
-	current_file = ".";
+	current_path = ".";
 	let upload_module = $(".upload-progress"), //上传
 		download_module = $(".download-progress")[0], //下载
 		netdisk = $(".nav-title li").eq(0),
@@ -680,51 +835,6 @@ function toDisk() {
 	transport_content.css("display", "none");
 	trans.css("display", "none");
 	transport[0].className = "";
-}
-
-/* 全部暂停下载
-*  @params
-*  @return
-*/
-function pauseList() {
-	let pause = document.getElementsByClassName("total-pause")[0],
-		uploadList = document.getElementById("uploadList"),
-		liList = uploadList.getElementsByTagName("li"),
-		len = liList.length;
-	if (pause.innerText === "全部暂停") {
-		for (let i = 0; i < len; i++) {
-			pauseUpload(i);
-		}
-		pause.innerText = "全部开始";
-	}
-	else {
-		for (let i = 0; i < len; i++) {
-			reUpload(i);
-		}
-		pause.innerText = "全部暂停";
-	}
-}
-
-/* 下载文件
-*  @params
-*  @return
-*/
-function downloadFile() {
-	console.log(select_file);
-	let form = document.createElement("form"),
-		input = document.createElement("input");
-	form.style.display = "none";
-	form.method = "post";
-	form.action = download_rpc;
-	form.enctype = "multipart/form-data";
-	input.type = "hidden";
-	input.name = "downloadfile";
-	input.value = select_file;
-	form.appendChild(input);
-	document.body.appendChild(form);
-
-	let form_data = new FormData(form);
-	form.submit();
 }
 
 /* 取消上传文件

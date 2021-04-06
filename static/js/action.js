@@ -146,9 +146,9 @@ function isFileType(flieName) {
 *  @return
 */
 function returnFile() {
-    console.log("returnFile")
-    current_file = "..";
-    queryData(current_file);
+    current_dirname_arr.pop();
+    current_path = current_dirname_arr.join('/');
+	queryData(current_path);
 }
 
 /* 清除选中框样式

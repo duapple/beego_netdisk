@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,8 +12,9 @@
     <script src="./static/js/action.js"></script>
     <script src="./static/js/page_action.js"></script>
     <script src="./static/js/spark-md5.min.js"></script>
-    <title>Sault</title>
+    <title>索特网盘</title>
 </head>
+
 <body onload="loadPage()">
     <div class="inner">
         <!-- 顶部 -->
@@ -20,27 +22,33 @@
             <!-- logo -->
             <div class="logo fl">
                 <img class="fl" src="./static/imgs/logo.png" alt="logo">
-                <h1 class="fl">索特网盘</h1>
+                <h1>索特网盘</h1>
             </div>
-            <div class="line fl"></div>
-            <!-- 顶部功能 -->
-            <ul class="nav-title fl">
-                <li class="active" onclick="toDisk()"><a href="javascript:;">我的网盘</a></li>
-                <li onclick="toTransport()"><a href="javascript:;">传输列表</a></li>
-                <li class="share"><a href="">好友分享</a></li>
-            </ul>
-            <div class="line fl"></div>
             <!-- 用户信息和退出 -->
-            <div class="user-logout fl">
+            <div class="user-logout fr">
                 <div class="user fl">
                     <img src="./static/imgs/user.png" alt="user">
-                    <a href="user.html" class="username"></a>
+                    <a href="" class="username"></a>
                     <script>
                         $(".username").text(username);
                     </script>
                 </div>
-                <div class="logout fl">[ <a href="javascript:;" onclick="logout()">退出</a> ]</div>
+                <div class="logout">[ <a href="javascript:;" onclick="logout()">退出</a> ]</div>
             </div>
+            <!-- 顶部功能 -->
+            <ul class="nav-title">
+                <div class="line fl"></div>
+                <li class="active" onclick="toDisk()">
+                    <a href="javascript:;">我的网盘</a>
+                </li>
+                <li onclick="toTransport()">
+                    <a href="javascript:;">传输列表</a>
+                </li>
+                <li class="share">
+                    <a href="">好友分享</a>
+                </li>
+                <div class="line fl"></div>
+            </ul>
         </div>
         <!-- 正文 -->
         <div class="main clearfix">
@@ -95,16 +103,15 @@
                                 <ul class="upload_file">
                                     <form method="post" id="filename" name="filename" enctype="multipart/form-data">
                                         <label for="file">
-                                            <input type="file" id="file" name="uploadfile" 
-                                                style="display: none;">
-                                                <li class="file">上传文件</li>
+                                            <input type="file" id="file" name="uploadfile" style="display: none;">
+                                            <li class="file">上传文件</li>
                                         </label>
                                     </form>
                                     <form method="post" id="filesname" name="filesname" enctype="multipart/form-data">
                                         <label for="folder">
                                             <input type="file" id="folder" name="uploadfile" webkitdirectory
                                                 style="display: none;" onclick="uploadDir()">
-                                                <li class="file">上传文件夹</li>
+                                            <li class="file">上传文件夹</li>
                                         </label>
                                     </form>
                                 </ul>
@@ -116,7 +123,7 @@
                                 <button>新建文件夹</button>
                             </li>
                             <!-- 刷新 -->
-                            <li class="refresh"  onclick="refresh()">
+                            <li class="refresh" onclick="refresh()">
                                 <i class="iconfont-refresh"></i>
                                 <button>刷新</button>
                             </li>
@@ -134,7 +141,7 @@
                                     <i class="iconfont-share"></i>
                                     <button>分享</button>
                                 </li>
-                            </li>
+                                </li>
                         </ul>
                     </div>
                     <!-- 返回上一级 -->
@@ -163,7 +170,7 @@
                         <!-- 右键菜单 -->
                         <ul class="menu">
                             <li onclick="downloadFile()">下载</li>
-                            <li onclick="rename()">重命名</li>
+                            <li onclick="renameFile()">重命名</li>
                             <li onclick="deleteFile()" style="border-bottom: none;">删除</li>
                         </ul>
                     </div>
@@ -213,8 +220,8 @@
                             <div class="load-list">
                                 <ul id="uploadList">
                                     <!-- <li class="status"> -->
-                                        <!-- 背景进度 -->
-                                        <!-- <div class="process"></div>
+                                    <!-- 背景进度 -->
+                                    <!-- <div class="process"></div>
                                         <div class="file-info">
                                             <div class="file-name">nand-ipq807x_64-apps(3).img</div>
                                             <div class="file-size">34.8M</div>
@@ -280,11 +287,13 @@
             </div>
         </div>
         <!-- 底部 -->
-        <div class="bottom"></div>
+        <!-- <div class="bottom"></div> -->
     </div>
     <script src="./static/js/index.js"></script>
 </body>
 <script>
+    $(".user-logout .user a")[0].href = account_href;
     $(".share a")[0].href = share_href;
 </script>
+
 </html>

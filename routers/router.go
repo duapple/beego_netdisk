@@ -16,12 +16,14 @@ func init() {
 	beego.Router("/authentication", &login.AuthenticationController{})
 	beego.Router("/register", &login.RegisterController{})
 	beego.Router("/deregister", &login.DeregisterController{})
-	beego.Router("/edit_account", &login.EditCountController{})
+	beego.Router("/edit_account", &login.EditAcountCtontroller{}) /* 修改账户 */
+	beego.Router("/account", &login.AcountController{})
 
 	beego.Router("/index", &home.IndexController{})
 	beego.Router("/dir_option", &home.DirOptionController{})
 
 	beego.Router("/upload", &upload.UploadController{})
+	beego.Router("/upload_chunk", &upload.UploadChunkController{})
 
 	beego.Router("/download", &download.DownloadController{})
 }

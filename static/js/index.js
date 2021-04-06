@@ -1,23 +1,24 @@
 // 加载页面
 function loadPage() {
-	queryData(current_file);
+	queryData(current_path);
 }
 
 // 获取数据
 function queryData(ret) {
-	let index_data = `{"Opt":0,"DirName":["${ret}"]}`;
-	console.log(index_data);
+	let index_data = `{"dir_option":"dir_option_read","dir_name":["${ret}"]}`;
 	$.ajax({
 		url: home_rpc,
 		data: index_data,
 		type: "POST",
 		async: false,
-		success: function (data) {
-			if (data) {
-				_DATA = data;
+		success: function (result) {
+			if (result.code === 0) {
+				_DATA = result.data;
+				console.log(_DATA);
 				return true;
 			}
 			else {
+				alert(result.msg);
 				return false;
 			}
 		},
@@ -39,13 +40,12 @@ function bindHTML() {
 
 	// 遍历数据(json格式)
 	for (let key in _DATA) {
-		if (key !== "CurrentDir") {
+		if (key !== "current_path") {
 			// 遍历属性值(数组形式)	
-			if (key === "Dirs") {
+			if (key === "dirs") {
 				if (_DATA[key]) {
 					_DATA[key].forEach(item => {
-						let { DirName, Size, ModTime } = item;
-						dirs_files_data[index] = DirName;
+						let { dir_name, size, modification_time } = item;
 						index++;
 						htmlStr += `
 							<tr class="trstyle">
@@ -57,7 +57,7 @@ function bindHTML() {
 								</td>
 								<td class="tdwidth1">
 									<div class="file_name">
-										<span>${DirName}</span>
+										<span>${dir_name}</span>
 									</div>
 									<label class="dir_label">
 										<i class="dir_i"></i>
@@ -68,18 +68,17 @@ function bindHTML() {
 										<i class="icon_more"></i>
 									</div>
 								</td>
-								<td class="tdwidth2">${Size}</td>
-								<td class="tdwidth3">${ModTime}</td>
+								<td class="tdwidth2">${size}</td>
+								<td class="tdwidth3">${modification_time}</td>
 							</tr>
 						`;
 					});
 				}
 			}
-			else if (key === "Files") {
+			else if (key === "files") {
 				if (_DATA[key]) {
 					_DATA[key].forEach(item => {
-						let { FileName, Size, ModTime } = item;
-						dirs_files_data[index] = FileName;
+						let { file_name, size, modification_time } = item;
 						index++;
 						htmlStr += `
 								<tr class="trstyle">
@@ -91,10 +90,10 @@ function bindHTML() {
 									</td>
 									<td class="tdwidth1">
 										<div class="file_name">
-											<span>${FileName}</span>
+											<span>${file_name}</span>
 										</div>
 										<label class="dir_label">
-											<i class="${isFileType(FileName)}"></i>
+											<i class="${isFileType(file_name)}"></i>
 										</label>
 										<div class="div_icon" style="display: none;">
 											<i class="icon_share"></i>
@@ -102,8 +101,8 @@ function bindHTML() {
 											<i class="icon_more"></i>
 										</div>
 									</td>
-									<td class="tdwidth2">${Size}</td>
-									<td class="tdwidth3">${ModTime}</td>
+									<td class="tdwidth2">${size}</td>
+									<td class="tdwidth3">${modification_time}</td>
 								</tr>
 							`;
 					});
@@ -111,19 +110,20 @@ function bindHTML() {
 			}
 		}
 		else {
-			current_dir = _DATA[key].slice(0, -1).split('/'); //以数组的形式存储路径
+			current_path = _DATA.current_path;
+			current_dirname_arr =  _DATA[key] === "/" ? [""] : (_DATA[key].split('/')); //以数组的形式存储路径的文件夹名
 			let str = ``,
 				text = "";
-			for (let i = 2; i < current_dir.length; i++) {
-				if (current_dir[i] === username) {
+			for (let i = 0; i < current_dirname_arr.length; i++) {
+				if (current_dirname_arr[i] === "") {
 					text = "全部文件";
 				}
 				else {
-					text = current_dir[i];
+					text = current_dirname_arr[i];
 				}
 				str += `
 						<a class="file_system_a">${text}</a>
-						${(i === current_dir.length - 1) ? "" : "<span class='file_system_span'>></span>"}
+						${(i === current_dirname_arr.length - 1) ? "" : "<span class='file_system_span'>></span>"}
 					`;
 				file_system.html(str);
 			}
@@ -226,6 +226,7 @@ function clickHandle() {
 
 	// 鼠标停留/离开时显示/隐藏每行的操作图标
 	trList.on('mouseenter', function (e) {
+		if(trList.index($(this)) === 0)	return;
 		stopPropagation(e); //阻止冒泡
 		iconList.eq(trList.index($(this)) - 1).css("display", "block");
 	}).on('mouseleave', function (e) {
@@ -262,12 +263,12 @@ function clickHandle() {
 	}
 	$(filenameList).on('click', function (e) {
 		let i = $(filenameList).index($(this));
+		dir_name = filenameList[i].innerText;
 		stopPropagation(e);
 		more_show.css("display", "none");
-		current_file = dirs_files_data[i]; //存储当前点击的文件夹名
+		current_path  = current_path === "/" ? (current_path + dir_name) : (current_path + "/" + dir_name);
 		if ($(i_list).eq(i).hasClass("dir_i")) { //文件夹可以点击进入
-			dirs_files_data = [];
-			queryData(current_file);
+			queryData(current_path);
 		}
 		else { //文件不可以点击进入
 			return;
@@ -278,6 +279,7 @@ function clickHandle() {
 	fileList.on('dblclick', function (e) {
 		stopPropagation(e);
 		let i = fileList.index($(this));
+		dir_name = fileList[i].innerText;
 		more_show.css("display", "none");
 		clearBox();
 		cleanLastHandle(lastIndex_rightBtn);
@@ -289,13 +291,12 @@ function clickHandle() {
 			cssLeftHandle(data_index);
 			lastIndex_leftBtn = data_index; //保存当前的index
 		}
-		current_file = dirs_files_data[i];
+		current_path  = current_path === "/" ? (current_path + dir_name) : (current_path + "/" + dir_name);
 		if (!($(i_list).hasClass("dir_i"))) { //是文件不可进入
 			return;
 		}
 		else { //文件夹可以进入
-			dirs_files_data = [];
-			queryData(current_file);
+			queryData(current_path);
 		}
 	});
 
@@ -306,18 +307,18 @@ function clickHandle() {
 			cleanLastHandle(lastIndex_rightBtn);
 			container.css("overflow", "hidden");
 			let data_index = $(this).attr('data-index');
-			if (!(trList.eq(data_index))) {
+			if (!(trList.eq(data_index)) || data_index === "0") {
 				return;
 			}
 			else {
 				cssLeftHandle(data_index);
 				lastIndex_rightBtn = data_index; //保存当前的index
 			}
+			current_dom = $(this);
 			select_file = ($(this).find("span").eq(0)).text();  //当前点击的文件名
 			menu.css("display", "block");
 			// 根据鼠标点击位置和浏览器顶部的距离更改菜单的位置
 			let obj = mousePos(e);
-			console.log(obj)
 			if (obj.width > 420) {
 				menu.css("left", obj.width - 330 + "px");
 			}
@@ -340,21 +341,10 @@ function clickHandle() {
 
 	// 点击路径跳转文件夹
 	systemList.on('click', function () {
-		let current = $(this).text(), //当前点击路径名
-			index_find = current_dir.indexOf(current),  //在已存的点击的文件夹集合里找当前点击路径名
-			jump_num = 0;
-		if (index_find !== -1) {
-			jump_num = (current_dir.length - 1) - index_find; //跳转次数
-			for (let i = 0; i < jump_num; i++) {
-				returnFile();
-			}
-		}
-		else { //点击的路径名为“全部文件”时跳转到根目录下
-			jump_num = (current_dir.length - 1) - 2;
-			for (let i = 0; i < jump_num; i++) {
-				console.log("***jump第" + i + "次");
-				returnFile();
-			}
-		}
+		let i = $(this).index();
+		i = i === current_dirname_arr.length ? (i - 1) : i;
+		current_dirname_arr.splice(i);
+		current_path = current_dirname_arr.join('/');
+		queryData(current_path);
 	});
 }

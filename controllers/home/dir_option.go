@@ -55,9 +55,9 @@ type Size_Unit int64
 
 const (
 	Size_Unit_GB   = 0x40000000 /* Gb */
-	Size_Unit_MB   = 0x400000   /* Mb */
+	Size_Unit_MB   = 0x100000   /* Mb */
 	Size_Unit_KB   = 0x400      /* Kb */
-	Size_Unit_BYTE = 0x00       /* Byte */
+	Size_Unit_BYTE = 0          /* Byte */
 )
 
 var RootPath string
@@ -340,6 +340,7 @@ func (dirInfo *Dir_Info) FileInfo_to_Dir_Info(dirInfoList []os.FileInfo) (err er
 	for _, info := range dirInfoList {
 
 		fileSize := info.Size()
+		logs.Info("filesize: ", fileSize)
 		size, unit := SizeUnitConvert(fileSize)
 		sizeStr := Itoa(size) + unit
 
@@ -370,20 +371,22 @@ func (dirInfo *Dir_Info) FileInfo_to_Dir_Info(dirInfoList []os.FileInfo) (err er
 func SizeUnitConvert(sizeIn int64) (sizeOut int64, unit string) {
 
 	switch {
-	case sizeIn < Size_Unit_BYTE && sizeIn >= 0:
+	case sizeIn < Size_Unit_KB && sizeIn >= Size_Unit_BYTE:
 		sizeOut = sizeIn
 		unit = "Byte"
 
-	case sizeIn < Size_Unit_KB && sizeIn >= Size_Unit_BYTE:
-		sizeOut = sizeIn % Size_Unit_KB
+	case sizeIn < Size_Unit_MB && sizeIn >= Size_Unit_KB:
+		sizeOut = sizeIn / Size_Unit_KB
 		unit = "Kb"
 
-	case sizeIn < Size_Unit_MB && sizeIn >= Size_Unit_KB:
-		sizeOut = sizeIn % Size_Unit_MB
+	case sizeIn < Size_Unit_GB && sizeIn >= Size_Unit_MB:
+		sizeOut = sizeIn / Size_Unit_MB
+		logs.Info("Size_Unit_MB:", Size_Unit_MB)
+		logs.Info("sizeOut: ", sizeOut)
 		unit = "Mb"
 
-	case sizeIn < Size_Unit_GB && sizeIn >= Size_Unit_MB:
-		sizeOut = sizeIn % Size_Unit_GB
+	case sizeIn >= Size_Unit_GB:
+		sizeOut = sizeIn / Size_Unit_GB
 		unit = "Gb"
 	}
 

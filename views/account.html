@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./static/css/reset.css">
+    <link rel="stylesheet" href="./static/css/account.css">
+    <script src="./static/js/jquery.min.js"></script>
+    <script src="./static/js/login_md5.js"></script>
+    <script src="./static/js/global.js"></script>
+    <script src="./static/js/action.js"></script>
+    <script src="./static/js/spark-md5.min.js"></script>
+    <title>个人中心</title>
+</head>
+
+<body>
+    <div class="inner">
+        <div class="top clearfix">
+            <!-- logo -->
+            <div class="logo fl">
+                <img class="fl" src="./static/imgs/logo.png" alt="logo">
+                <h1 class="fl">索特网盘</h1>
+            </div>
+            <div class="line fl"></div>
+            <!-- 顶部功能 -->
+            <ul class="nav-title fl">
+                <li><a href="javascript:;">个人中心</a></li>
+            </ul>
+        </div>
+        <div class="content">
+            <div class="left">
+                <li class="active">
+                    <a href="javascript:;">个人资料</a>
+                </li>
+                <li>
+                    <a href="javascript:;">绑定邮箱</a>
+                </li>
+                <li>
+                    <a href="javascript:;">修改密码</a>
+                </li>
+                <li>
+                    <a href="javascript:;">账号注销</a>
+                </li>
+            </div>
+            <div class="main">
+                <div class="main-info main-active">
+                    <div class="title">
+                        <span>Hi , </span>
+                        <span></span>
+                    </div>
+                    <div class="info">
+                        <li>
+                            <span>手机号：</span>
+                            <span></span>
+                        </li>
+                        <li>
+                            <span>邮箱：</span>
+                            <span></span>
+                        </li>
+                    </div>
+                </div>
+                <div class="main-info hide"></div>
+                <div class="main-info hide">
+                    <div class="title">
+                        <span>请设置新密码</span>
+                    </div>
+                    <div class="info">
+                        <p>用户名：</p>
+                        <li class="name">
+                            <input type="text" name="username" maxlength="14" disabled>
+                        </li>
+                        <p>密码：</p>
+                        <li class="pwd">
+                            <input type="password" name="password" placeholder="6-14位，建议数字、字母、下划线组合" maxlength="14">
+                        </li>
+                        <li style="margin-top: 40px;">
+                            <button onclick="modify_pwd()">确定</button>
+                        </li>
+                    </div>
+                </div>
+                <div class="main-info hide">
+                    <div class="title">
+                        <span>注销账号</span>
+                    </div>
+                    <div class="info">
+                        <li>
+                            <span>用户名：</span>
+                            <span></span>
+                        </li>
+                        <li>
+                            <span>手机号：</span>
+                            <span></span>
+                        </li>
+                        <li>
+                            <span>邮箱：</span>
+                            <span></span>
+                        </li>
+                        <li style="margin-top: 40px;">
+                            <button onclick="deregister()">确定注销</button>
+                        </li>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="./static/js/account.js"></script>
+</body>
+<script>
+    
+</script>
+</html>

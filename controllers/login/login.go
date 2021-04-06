@@ -33,7 +33,11 @@ type DeregisterController struct {
 	controllers.Controller
 }
 
-type EditCountController struct {
+type AcountController struct {
+	controllers.Controller
+}
+
+type EditAcountCtontroller struct {
 	controllers.Controller
 }
 
@@ -282,7 +286,7 @@ func (c *DeregisterController) Post() {
 
 }
 
-func (c *EditCountController) Post() {
+func (c *EditAcountCtontroller) Post() {
 
 	data := c.Body_Check()
 
@@ -348,4 +352,14 @@ func (c *EditCountController) Post() {
 		}
 		return
 	}
+}
+
+func (c *AcountController) Get() {
+	userName := c.GetSession("username")
+	if userName == nil {
+		c.DestroySession()
+		c.Ctx.Redirect(302, "/login")
+	}
+
+	c.TplName = "account.html"
 }
