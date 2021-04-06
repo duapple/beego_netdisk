@@ -1,0 +1,16 @@
+2021/04/06 23:48:26.019 [1;34m[I][0m [mylog.go:9]  Log module init ok.
+
+2021/04/06 23:48:26.019 [1;34m[I][0m [dir_option.go:73]  Root Disk path:  /home/river/Workspace/RootDisk/
+
+2021/04/06 23:48:26.019 [1;34m[I][0m [proc.go:6265]  account module init...
+
+2021/04/06 23:48:26.019 [1;34m[I][0m [account.go:53]  Read file to buffer
+
+2021/04/06 23:48:26.019 [1;34m[I][0m [account.go:41]  Users Info:  map[river:{river $1$qPF0sXovuJuKwYsxoz16aact  }]
+
+2021/04/06 23:48:26.019 [1;34m[I][0m [proc.go:6265]  data:  {users_db.json map[]}
+
+2021/04/06 23:48:26.193 [1;34m[I][0m [parser.go:112]  generate router from comments
+
+2021/04/06 23:48:26.193 [1;34m[I][0m [asm_amd64.s:1371]  http server Running on http://localhost:9090
+

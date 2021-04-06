@@ -1,4 +1,4 @@
-let host = "localhost:9090";
+let host = "sault.top:9090";
 
 // 链接地址
 let login_href = "http://" + host + "/login",

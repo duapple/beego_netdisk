@@ -6,12 +6,12 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strconv"
 
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/duapple/beego_netdisk/controllers"
 	"github.com/duapple/beego_netdisk/controllers/home"
 	"github.com/duapple/beego_netdisk/controllers/userptl"
-	"github.com/prometheus/common/log"
 )
 
 type UploadController struct {
@@ -22,15 +22,12 @@ type UploadChunkController struct {
 	controllers.Controller
 }
 
+type UploadChunkGetController struct {
+	controllers.Controller
+}
+
 type Chunk_Upload_Info struct {
-	UserName    string `json:"user_name"`
-	SrcFilePath string `json:"src_file_path"`
-	FilePath    string `json:"file_path"`
-	FileName    string `json:"file_name"`
-	Size        int64  `json:"size"`
-	ChunkNum    int32  `json:"chunk_num"`
-	MD5         string `json:"md5"`
-	ChunkIndex  int32  `json:"chunk_index"`
+	controllers.Chunk_Upload_Info_t
 }
 
 func (c *UploadController) Post() {
@@ -100,7 +97,7 @@ func (c *UploadChunkController) Post() {
 	}
 
 	defer func() {
-		logs.Error(err)
+		// logs.Error(err)
 		responseJson.PrintBody()
 		c.Data["json"] = responseJson
 		c.ServeJSON()
@@ -109,7 +106,7 @@ func (c *UploadChunkController) Post() {
 	var uploadInfo Chunk_Upload_Info
 	var sessionUploadInfo Chunk_Upload_Info
 
-	err = c.ParseForm(&uploadInfo)
+	err = c.Get_Upload_Info(&uploadInfo)
 	if err != nil {
 		responseJson = userptl.ResponseBody{
 			Method: c.Ctx.Request.RequestURI,
@@ -120,25 +117,60 @@ func (c *UploadChunkController) Post() {
 		return
 	}
 
-	//上传第一片，需要做任务创建
+	logs.Info("uploadInfo: \r\n", uploadInfo)
 
 	fullPath := path.Clean(home.RootPath + currentUser + "/" + uploadInfo.FilePath + "/" + uploadInfo.FileName)
-	// 判断文件是否已经存在
-	_, err = os.Stat(fullPath)
-	if err == nil {
-		responseJson = userptl.ResponseBody{
-			Method: c.Ctx.Request.RequestURI,
-			Data:   "",
-			Msg:    "File already exist.",
-			Code:   userptl.ERROR_TARGET_EXIST,
+	savePath := path.Clean(home.RootPath + uploadInfo.UserName + "/" + uploadInfo.FilePath + "/" + uploadInfo.FileName + ".tmp")
+
+	logs.Info("fullPath: ", fullPath, "savePath:", savePath)
+
+	//上传第一片，需要做任务创建
+	if uploadInfo.ChunkIndex == 1 {
+		// 判断文件是否已经存在
+		_, err = os.Stat(fullPath)
+		if err == nil {
+			responseJson = userptl.ResponseBody{
+				Method: c.Ctx.Request.RequestURI,
+				Data:   "",
+				Msg:    "File already exist.",
+				Code:   userptl.ERROR_TARGET_EXIST,
+			}
+			return
 		}
-		return
+
+		_, err = os.Stat(savePath)
+		if err == nil {
+
+			err := os.Remove(savePath)
+			if err != nil {
+				responseJson = userptl.ResponseBody{
+					Method: c.Ctx.Request.RequestURI,
+					Data:   "",
+					Msg:    "Tempurature file already exist.",
+					Code:   userptl.ERROR_TARGET_EXIST,
+				}
+				return
+			}
+		}
 	}
 
 	// 在session中保存本次任务的信息
 	taskId := path.Clean(uploadInfo.FilePath + "/" + uploadInfo.FileName)
+	logs.Info("taskId:", taskId)
 	sessionUploadInfoObj := c.GetSession(taskId)
 	if sessionUploadInfoObj == nil {
+		logs.Info("session is null.")
+
+		if uploadInfo.ChunkIndex != 1 {
+			responseJson = userptl.ResponseBody{
+				Method: c.Ctx.Request.RequestURI,
+				Data:   "",
+				Msg:    "Session upload info not exist.",
+				Code:   userptl.ERROR_PARAM_INVALID,
+			}
+			return
+		}
+
 		err = c.SetSession(taskId, uploadInfo)
 		if err != nil {
 			responseJson = userptl.ResponseBody{
@@ -154,6 +186,7 @@ func (c *UploadChunkController) Post() {
 		sessionUploadInfo.ChunkIndex = 0
 
 	} else {
+
 		sessionUploadInfo, ok = sessionUploadInfoObj.(Chunk_Upload_Info)
 		if !ok {
 			responseJson = userptl.ResponseBody{
@@ -164,16 +197,44 @@ func (c *UploadChunkController) Post() {
 			}
 			return
 		}
+
+		if uploadInfo.ChunkIndex == 1 {
+			err = c.SetSession(taskId, uploadInfo)
+			if err != nil {
+				responseJson = userptl.ResponseBody{
+					Method: c.Ctx.Request.RequestURI,
+					Data:   "",
+					Msg:    err.Error(),
+					Code:   userptl.ERROR_SERVER_INSIDE,
+				}
+				return
+			}
+
+			sessionUploadInfo = uploadInfo
+			sessionUploadInfo.ChunkIndex = 0
+		}
 	}
 
 	ok = sessionUploadInfo.Check(&uploadInfo)
 	if !ok {
 		responseJson = userptl.ResponseBody{
 			Method: c.Ctx.Request.RequestURI,
-			Data:   "",
+			Data:   sessionUploadInfo,
 			Msg:    "Current chunk info error.",
 			Code:   userptl.ERROR_DATA_ANALYSIS,
 		}
+		return
+	}
+
+	if sessionUploadInfo.ChunkIndex >= uploadInfo.ChunkIndex {
+		msg := fmt.Sprintf("Chunk index error. session chunk index: %d, client chunk index: %d, ", sessionUploadInfo.ChunkIndex, uploadInfo.ChunkIndex)
+		responseJson = userptl.ResponseBody{
+			Method: c.Ctx.Request.RequestURI,
+			Data:   sessionUploadInfo,
+			Msg:    msg,
+			Code:   userptl.ERROR_PARAM_INVALID,
+		}
+		return
 	}
 
 	_, h, err := c.GetFile("upload_file")
@@ -190,7 +251,6 @@ func (c *UploadChunkController) Post() {
 
 	logs.Info("upload file name:", h.Filename)
 
-	savePath := path.Clean(home.RootPath + uploadInfo.UserName + "/" + uploadInfo.FilePath + "/" + h.Filename + ".tmp")
 	// c.SaveToFile("upload_file", savePath)
 
 	file, _, err := c.Ctx.Request.FormFile("upload_file")
@@ -247,11 +307,24 @@ func (c *UploadChunkController) Post() {
 	defer fileSave.Close()
 	logs.Info("write_len: ", write_len)
 
-	sessionUploadInfo.ChunkIndex++
+	sessionUploadInfo.ChunkIndex = sessionUploadInfo.ChunkIndex + 1
+	logs.Info("chunk index: ", sessionUploadInfo.ChunkIndex)
 	if sessionUploadInfo.ChunkIndex == sessionUploadInfo.ChunkNum {
 
-		md5_str = FileMD5(savePath)
+		md5_str := FileMD5(savePath)
 		if md5_str != sessionUploadInfo.MD5 {
+
+			err := os.Remove(savePath)
+			if err != nil {
+				responseJson = userptl.ResponseBody{
+					Method: c.Ctx.Request.RequestURI,
+					Data:   "",
+					Msg:    err.Error(),
+					Code:   userptl.ERROR_SERVER_INSIDE,
+				}
+				return
+			}
+
 			responseJson = userptl.ResponseBody{
 				Method: c.Ctx.Request.RequestURI,
 				Data:   "",
@@ -270,21 +343,32 @@ func (c *UploadChunkController) Post() {
 				Code:   userptl.ERROR_SERVER_INSIDE,
 			}
 			return
-		}
-		else {
+		} else {
 
 			responseJson = userptl.ResponseBody{
 				Method: c.Ctx.Request.RequestURI,
 				Data:   sessionUploadInfo,
-				Msg:    "Upload file success.",
+				Msg:    "Upload all file success.",
 				Code:   userptl.SUCCESS,
 			}
 
 			// 完成一个文件的完整上传，删除session中暂存的信息
 			c.DelSession(taskId)
+			return
 		}
 
 	} else {
+
+		err = c.SetSession(taskId, sessionUploadInfo)
+		if err != nil {
+			responseJson = userptl.ResponseBody{
+				Method: c.Ctx.Request.RequestURI,
+				Data:   sessionUploadInfo,
+				Msg:    "Set session upload info error.",
+				Code:   userptl.ERROR_SERVER_INSIDE,
+			}
+			return
+		}
 
 		responseJson = userptl.ResponseBody{
 			Method: c.Ctx.Request.RequestURI,
@@ -292,11 +376,71 @@ func (c *UploadChunkController) Post() {
 			Msg:    "Upload file success.",
 			Code:   userptl.SUCCESS,
 		}
+		return
 	}
 }
 
-func (c *UploadChunkController) Get() {
+func (c *UploadChunkGetController) Post() {
+	var current_user string
+	var responseJson userptl.ResponseBody
+	var err error
 
+	ok := c.Session_Check_Form(&current_user)
+	if !ok {
+		return
+	}
+
+	defer func() {
+		// logs.Error(err)
+		responseJson.PrintBody()
+		c.Data["json"] = responseJson
+		c.ServeJSON()
+	}()
+
+	var upload_info Chunk_Upload_Info
+
+	err = c.Get_Upload_Info(&upload_info)
+	if err != nil {
+		responseJson = userptl.ResponseBody{
+			Method: c.Ctx.Request.RequestURI,
+			Data:   "",
+			Msg:    err.Error(),
+			Code:   userptl.ERROR_DATA_ANALYSIS,
+		}
+		return
+	}
+
+	taskId := path.Clean(upload_info.FilePath + "/" + upload_info.FileName)
+	logs.Info("taskId: ", taskId)
+	session_upload_info_obj := c.GetSession(taskId)
+	if session_upload_info_obj == nil {
+
+		responseJson = userptl.ResponseBody{
+			Method: c.Ctx.Request.RequestURI,
+			Data:   "",
+			Msg:    "Get session error.",
+			Code:   userptl.ERROR_DATA_ANALYSIS,
+		}
+		return
+	}
+
+	session_upload_info, ok := session_upload_info_obj.(Chunk_Upload_Info)
+	if !ok {
+		responseJson = userptl.ResponseBody{
+			Method: c.Ctx.Request.RequestURI,
+			Data:   "",
+			Msg:    "Get session upload info error.",
+			Code:   userptl.ERROR_DATA_ANALYSIS,
+		}
+		return
+	}
+
+	responseJson = userptl.ResponseBody{
+		Method: c.Ctx.Request.RequestURI,
+		Data:   session_upload_info,
+		Msg:    "Get session upload info success.",
+		Code:   userptl.SUCCESS,
+	}
 }
 
 func (info *Chunk_Upload_Info) Check(res *Chunk_Upload_Info) (ok bool) {
@@ -317,16 +461,80 @@ func Merge_Chunk() (err error) {
 
 func FileMD5(file string) string {
 	f, err := os.Open(file)
-	defer f.Close()
 	if err != nil {
 		logs.Info(err)
 		return ""
 	}
+	defer f.Close()
 
 	buffer, _ := ioutil.ReadAll(f)
 	data := buffer
 	has := md5.Sum(data)
 	md5str := fmt.Sprintf("%x", has)
-	log.Infof("MD5:%s\n", md5str)
+	logs.Info("MD5:%s\n", md5str)
 	return md5str
+}
+
+func (c *UploadChunkController) Get_Upload_Info(info *Chunk_Upload_Info) (err error) {
+	info.UserName = c.GetString("user_name")
+	info.SrcFilePath = c.GetString("src_file_path")
+	info.FilePath = c.GetString("file_path")
+	info.FileName = c.GetString("file_name")
+
+	var size int
+	var chunknum int
+	var chunkindex int
+	size, err = strconv.Atoi(c.GetString("size"))
+	if err != nil {
+		logs.Error(err)
+	}
+	info.Size = int64(size)
+
+	chunknum, err = strconv.Atoi(c.GetString("chunk_num"))
+	if err != nil {
+		logs.Error(err)
+	}
+	info.ChunkNum = int32(chunknum)
+
+	info.MD5 = c.GetString("md5")
+
+	chunkindex, err = strconv.Atoi(c.GetString("chunk_index"))
+	if err != nil {
+		logs.Error(err)
+	}
+	info.ChunkIndex = int32(chunkindex)
+
+	return
+}
+
+func (c *UploadChunkGetController) Get_Upload_Info(info *Chunk_Upload_Info) (err error) {
+	info.UserName = c.GetString("user_name")
+	info.SrcFilePath = c.GetString("src_file_path")
+	info.FilePath = c.GetString("file_path")
+	info.FileName = c.GetString("file_name")
+
+	var size int
+	var chunknum int
+	var chunkindex int
+	size, err = strconv.Atoi(c.GetString("size"))
+	if err != nil {
+		logs.Error(err)
+	}
+	info.Size = int64(size)
+
+	chunknum, err = strconv.Atoi(c.GetString("chunk_num"))
+	if err != nil {
+		logs.Error(err)
+	}
+	info.ChunkNum = int32(chunknum)
+
+	info.MD5 = c.GetString("md5")
+
+	chunkindex, err = strconv.Atoi(c.GetString("chunk_index"))
+	if err != nil {
+		logs.Error(err)
+	}
+	info.ChunkIndex = int32(chunkindex)
+
+	return
 }

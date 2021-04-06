@@ -24,6 +24,7 @@ func init() {
 
 	beego.Router("/upload", &upload.UploadController{})
 	beego.Router("/upload_chunk", &upload.UploadChunkController{})
+	beego.Router("/upload_chunk_get", &upload.UploadChunkGetController{})
 
 	beego.Router("/download", &download.DownloadController{})
 }

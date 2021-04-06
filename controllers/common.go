@@ -19,6 +19,17 @@ type Form_Data struct {
 	Name string `form:"test"`
 }
 
+type Chunk_Upload_Info_t struct {
+	UserName    string `json:"user_name"`
+	SrcFilePath string `json:"src_file_path"`
+	FilePath    string `json:"file_path"`
+	FileName    string `json:"file_name"`
+	Size        int64  `json:"size"`
+	ChunkNum    int32  `json:"chunk_num"`
+	MD5         string `json:"md5"`
+	ChunkIndex  int32  `json:"chunk_index"`
+}
+
 func (c *Controller) Session_Check(responseJson *userptl.ResponseBody,
 	userName *string) (data []byte, ok bool) {
 	if responseJson == nil || userName == nil {
